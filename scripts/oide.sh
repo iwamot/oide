@@ -40,7 +40,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 echo "Fetching $source_repo @ $source_ref ..."
 git -C "$tmpdir" init -q
 git -C "$tmpdir" remote add origin "https://github.com/$source_repo.git"
-git -C "$tmpdir" fetch --depth 1 -q origin "$source_ref"
+git -C "$tmpdir" fetch --depth 1 -q origin -- "$source_ref"
 git -C "$tmpdir" checkout -q FETCH_HEAD
 
 read_oidefile() {
