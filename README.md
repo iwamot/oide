@@ -1,6 +1,6 @@
-# oide
+# Oide
 
-> oide (/oh-ee-day/) — Japanese for "come over"
+> Oide (/oh-ee-day/) — Japanese for "come over"
 
 GitHub Action that pulls files listed in your `Oidefile` from a source repository.
 
@@ -39,7 +39,7 @@ jobs:
       - name: Open or update PR
 ```
 
-oide writes pulled files into the workspace; opening a PR is a separate step.
+Oide writes pulled files into the workspace; opening a PR is a separate step.
 
 ## Inputs
 
@@ -73,7 +73,7 @@ Oidefile
 SECURITY.md
 ```
 
-When `Oidefile` is self-listed, oide fetches the source's `Oidefile` first and re-reads it before pulling the other files. Adding a line in source's `Oidefile` then propagates to every consumer in a single run. Omit `Oidefile` from the manifest to let each consumer pin its own subset.
+When `Oidefile` is self-listed, Oide fetches the source's `Oidefile` first and re-reads it before pulling the other files. Adding a line in source's `Oidefile` then propagates to every consumer in a single run. Omit `Oidefile` from the manifest to let each consumer pin its own subset.
 
 ## Tip: Renovate integration
 
