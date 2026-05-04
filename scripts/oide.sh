@@ -57,22 +57,24 @@ for entry in "${list_initial[@]}"; do
   fi
 done
 
+pulled=0
+skipped=0
+oidefile_pulled=false
+
 # Self-listing: pull source's Oidefile first and re-read for an authoritative
 # list. This lets file additions on the source side propagate in one run.
-oidefile_pulled=false
 if [[ "$oidefile_self_listed" == "true" && -f "$tmpdir/Oidefile" ]]; then
   cp "$tmpdir/Oidefile" "$workspace/Oidefile"
+  echo "  pulled: Oidefile"
+  pulled=$((pulled + 1))
   oidefile_pulled=true
   mapfile -t list_authoritative < <(read_oidefile "$workspace/Oidefile")
 else
   list_authoritative=("${list_initial[@]}")
 fi
 
-pulled=0
-skipped=0
 for entry in "${list_authoritative[@]}"; do
   if [[ "$entry" == "Oidefile" && "$oidefile_pulled" == "true" ]]; then
-    pulled=$((pulled + 1))
     continue
   fi
 
