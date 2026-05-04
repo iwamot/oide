@@ -36,12 +36,7 @@ jobs:
       - uses: iwamot/oide@...
         with:
           source: org/template-repo@v1.0.0
-      - uses: peter-evans/create-pull-request@...
-        with:
-          branch: oide/pull
-          title: 'chore: pull files via oide'
-          commit-message: 'chore: pull files via oide'
-          body: 'Automated pull via [oide](https://github.com/iwamot/oide).'
+      - name: Open or update PR
 ```
 
 oide writes pulled files into the workspace; opening a PR is a separate step.
