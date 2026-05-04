@@ -1,6 +1,10 @@
 name: 'Oide'
 description: 'Pulls files listed in your Oidefile from a source repository.'
 
+branding:
+  icon: corner-left-down
+  color: orange
+
 inputs:
   source:
     description: 'Source repo in org/repo@ref format (ref can be tag, branch, or SHA)'
