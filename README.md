@@ -80,24 +80,25 @@ LICENSE
 
 When `Oidefile` is self-listed, oide fetches the source's `Oidefile` first and re-reads it before pulling the other files. Adding a line in source's `Oidefile` then propagates to every consumer in a single run. Omit `Oidefile` from the manifest to let each consumer pin its own subset.
 
-## Renovate integration
+## Tip: Renovate integration
 
-The `source: org/repo@ref` form is easy to keep current with Renovate `customManagers`:
+Declare the source ref as an env var with a Renovate annotation, then reference it from the action input:
 
-```json
-{
-  "customManagers": [
-    {
-      "customType": "regex",
-      "fileMatch": ["^\\.github/workflows/oide\\.yml$"],
-      "matchStrings": [
-        "source:\\s*(?<depName>[^@\\s]+)@(?<currentValue>[^\\s]+)"
-      ],
-      "datasourceTemplate": "github-tags"
-    }
-  ]
-}
+```yaml
+env:
+  # renovate: datasource=github-tags depName=org/template-repo
+  TEMPLATE_VERSION: v1.0.0
+
+jobs:
+  pull:
+    ...
+    steps:
+      - uses: iwamot/oide@...
+        with:
+          source: org/template-repo@${{ env.TEMPLATE_VERSION }}
 ```
+
+Renovate's [`customManagers:githubActionsVersions`](https://docs.renovatebot.com/presets-customManagers/#custommanagersgithubactionsversions) preset (included in `config:best-practices`) picks this up and opens PRs when new tags are published.
 
 ## Out of scope
 
