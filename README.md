@@ -11,8 +11,8 @@ Common use case: a template repository owns shared files (license, security poli
 Add an `Oidefile` at your repo root listing the files to pull:
 
 ```
-SECURITY.md
 LICENSE
+SECURITY.md
 ```
 
 Example workflow at `.github/workflows/oide.yml`:
@@ -52,8 +52,8 @@ oide writes pulled files into the workspace; opening a PR is a separate step.
 A plain-text manifest at your repo root. One file path per line, relative to the repo root:
 
 ```
-SECURITY.md
 LICENSE
+SECURITY.md
 ```
 
 ## How it works
@@ -68,9 +68,9 @@ LICENSE
 Listing `Oidefile` itself in your `Oidefile` lets the source own the manifest going forward:
 
 ```
+LICENSE
 Oidefile
 SECURITY.md
-LICENSE
 ```
 
 When `Oidefile` is self-listed, oide fetches the source's `Oidefile` first and re-reads it before pulling the other files. Adding a line in source's `Oidefile` then propagates to every consumer in a single run. Omit `Oidefile` from the manifest to let each consumer pin its own subset.
