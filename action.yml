@@ -1,4 +1,4 @@
-name: 'oide'
+name: 'Oide'
 description: 'Pulls files listed in your Oidefile from a source repository.'
 
 inputs:
