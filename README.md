@@ -19,9 +19,11 @@ Example workflow at `.github/workflows/oide.yml`:
 
 ```yaml
 on:
-  schedule:
-    - cron: '0 0 * * 1'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/oide.yml
 
 jobs:
   pull:
