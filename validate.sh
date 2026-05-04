@@ -10,7 +10,5 @@ mise install
 mise run gha-lint
 mise run shell-lint
 
-# Add repo-specific lint here
-
 # Check for uncommitted changes
 git diff --exit-code
