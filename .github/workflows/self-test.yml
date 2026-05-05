@@ -17,12 +17,33 @@ jobs:
     name: self-test
     runs-on: ubuntu-latest
     timeout-minutes: 1
+    environment: test
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+
+      - name: Pull from public fixture (no token)
+        env:
+          SOURCE: iwamot/oide-fixture-public@main
+        run: |
+          workdir=$(mktemp -d)
+          echo "README.md" > "$workdir/Oidefile"
+          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          test -f "$workdir/README.md"
+
+      - name: Pull from private fixture (with token)
+        if: github.event.pull_request.head.repo.fork != true
+        env:
+          SOURCE: iwamot/oide-fixture-private@main
+          TOKEN: ${{ secrets.OIDE_FIXTURE_TOKEN }}
+        run: |
+          workdir=$(mktemp -d)
+          echo "README.md" > "$workdir/Oidefile"
+          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          test -f "$workdir/README.md"
 
       - name: Self-skip exits no-op when source equals github.repository
         env:

@@ -40,7 +40,16 @@ trap 'rm -rf "$tmpdir"' EXIT
 echo "Fetching $source_repo @ $source_ref ..."
 git -C "$tmpdir" init -q
 git -C "$tmpdir" remote add origin "https://github.com/$source_repo.git"
-git -C "$tmpdir" fetch --depth 1 -q origin -- "$source_ref"
+
+if [[ -n "${TOKEN:-}" ]]; then
+  auth=$(printf '%s' "x-access-token:${TOKEN}" | base64 -w0)
+  git -C "$tmpdir" \
+    -c "http.extraheader=Authorization: Basic ${auth}" \
+    fetch --depth 1 -q origin -- "$source_ref"
+else
+  git -C "$tmpdir" fetch --depth 1 -q origin -- "$source_ref"
+fi
+
 git -C "$tmpdir" checkout -q FETCH_HEAD
 
 read_oidefile() {
