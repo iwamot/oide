@@ -47,7 +47,8 @@ Oide writes pulled files into the workspace; opening a PR is a separate step.
 
 | Input | Required | Description |
 |---|---|---|
-| `source` | yes | Source repo as `org/repo@ref`. `ref` can be a tag, branch, or commit SHA. Source must currently be public. |
+| `source` | yes | Source repo as `org/repo@ref`. `ref` can be a tag, branch, or commit SHA. |
+| `token`  | no  | Token with `contents:read` access to the source repo. Required only for private source repositories. |
 
 ## Oidefile
 
@@ -96,6 +97,19 @@ jobs:
 ```
 
 Renovate's [`customManagers:githubActionsVersions`](https://docs.renovatebot.com/presets-customManagers/#custommanagersgithubactionsversions) preset (included in `config:best-practices`) picks this up and opens PRs when new tags are published.
+
+## Private source repositories
+
+To pull from a private source, pass a token with `contents:read` access on the source:
+
+```yaml
+- uses: iwamot/oide@...
+  with:
+    source: org/private-template@v1.0.0
+    token: ${{ secrets.OIDE_TOKEN }}
+```
+
+For cross-repository access, `secrets.GITHUB_TOKEN` is not sufficient (it only grants access to the calling repository). Use a fine-grained Personal Access Token, or an App installation token via `actions/create-github-app-token`.
 
 ## Out of scope
 
