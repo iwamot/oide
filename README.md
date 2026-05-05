@@ -21,11 +21,11 @@ Example workflow at `.github/workflows/oide.yml`:
 
 ```yaml
 on:
-  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - .github/workflows/oide.yml
+  workflow_dispatch:
 
 jobs:
   pull:
@@ -41,7 +41,7 @@ jobs:
       - name: Open or update PR
 ```
 
-Oide writes pulled files into the workspace; opening a PR is a separate step.
+Oide writes pulled files into the workspace; pushing them and opening a PR are separate steps (and the permissions above exist for those steps, not for Oide itself).
 
 ## Inputs
 
@@ -65,6 +65,19 @@ SECURITY.md
 2. **Self-skip**: if `github.repository == repo`, exit no-op. Keeps the action from acting on the source repo itself when the workflow file happens to live there too.
 3. Read the caller's `Oidefile`.
 4. For each listed file present in source's git tree, copy it into the workspace. Files absent from source are skipped.
+
+## Private source repositories
+
+To pull from a private source, pass a token with `contents:read` access on the source:
+
+```yaml
+- uses: iwamot/oide@...
+  with:
+    source: org/private-template@v1.0.0
+    token: ${{ secrets.OIDE_TOKEN }}
+```
+
+For cross-repository access, `secrets.GITHUB_TOKEN` is not sufficient (it only grants access to the calling repository). Use a fine-grained Personal Access Token, or an App installation token via `actions/create-github-app-token`.
 
 ## Tip: source-managed manifest
 
@@ -97,19 +110,6 @@ jobs:
 ```
 
 Renovate's [`customManagers:githubActionsVersions`](https://docs.renovatebot.com/presets-customManagers/#custommanagersgithubactionsversions) preset (included in `config:best-practices`) picks this up and opens PRs when new tags are published.
-
-## Private source repositories
-
-To pull from a private source, pass a token with `contents:read` access on the source:
-
-```yaml
-- uses: iwamot/oide@...
-  with:
-    source: org/private-template@v1.0.0
-    token: ${{ secrets.OIDE_TOKEN }}
-```
-
-For cross-repository access, `secrets.GITHUB_TOKEN` is not sufficient (it only grants access to the calling repository). Use a fine-grained Personal Access Token, or an App installation token via `actions/create-github-app-token`.
 
 ## Out of scope
 
