@@ -1,6 +1,6 @@
 # Oide
 
-[![GitHub release](https://img.shields.io/github/v/release/iwamot/oide?logo=github&label=Marketplace)](https://github.com/marketplace/actions/oide-by-iwamot)
+[![Marketplace](https://img.shields.io/github/v/release/iwamot/oide?logo=github&label=Marketplace)](https://github.com/marketplace/actions/oide-by-iwamot)
 
 > Oide (/oh-ee-day/) — Japanese for "come over"
 
