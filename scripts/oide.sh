@@ -29,8 +29,18 @@ fi
 
 workspace="${GITHUB_WORKSPACE:-$(pwd)}"
 
-if [[ ! -f "$workspace/Oidefile" ]]; then
-  echo "::error::Oidefile not found at $workspace/Oidefile"
+# Discover the Oidefile. Root takes precedence over .github/, following
+# Renovate's config-file resolution order.
+oidefile_rel=""
+for candidate in Oidefile .github/Oidefile; do
+  if [[ -f "$workspace/$candidate" ]]; then
+    oidefile_rel="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$oidefile_rel" ]]; then
+  echo "::error::Oidefile not found at $workspace/Oidefile or $workspace/.github/Oidefile"
   exit 1
 fi
 
@@ -56,11 +66,11 @@ read_oidefile() {
   awk 'NF { gsub(/^[[:space:]]+|[[:space:]]+$/, ""); print }' "$1"
 }
 
-mapfile -t list_initial < <(read_oidefile "$workspace/Oidefile")
+mapfile -t list_initial < <(read_oidefile "$workspace/$oidefile_rel")
 
 oidefile_self_listed=false
 for entry in "${list_initial[@]}"; do
-  if [[ "$entry" == "Oidefile" ]]; then
+  if [[ "$entry" == "$oidefile_rel" ]]; then
     oidefile_self_listed=true
     break
   fi
@@ -72,18 +82,21 @@ oidefile_pulled=false
 
 # Self-listing: pull source's Oidefile first and re-read for an authoritative
 # list. This lets file additions on the source side propagate in one run.
-if [[ "$oidefile_self_listed" == "true" && -f "$tmpdir/Oidefile" ]]; then
-  cp "$tmpdir/Oidefile" "$workspace/Oidefile"
-  echo "  pulled: Oidefile"
+# The self entry is whichever path the Oidefile was discovered at, so source
+# must keep its Oidefile at that same path for the re-read to fire.
+if [[ "$oidefile_self_listed" == "true" && -f "$tmpdir/$oidefile_rel" ]]; then
+  mkdir -p "$workspace/$(dirname "$oidefile_rel")"
+  cp "$tmpdir/$oidefile_rel" "$workspace/$oidefile_rel"
+  echo "  pulled: $oidefile_rel"
   pulled=$((pulled + 1))
   oidefile_pulled=true
-  mapfile -t list_authoritative < <(read_oidefile "$workspace/Oidefile")
+  mapfile -t list_authoritative < <(read_oidefile "$workspace/$oidefile_rel")
 else
   list_authoritative=("${list_initial[@]}")
 fi
 
 for entry in "${list_authoritative[@]}"; do
-  if [[ "$entry" == "Oidefile" && "$oidefile_pulled" == "true" ]]; then
+  if [[ "$entry" == "$oidefile_rel" && "$oidefile_pulled" == "true" ]]; then
     continue
   fi
 

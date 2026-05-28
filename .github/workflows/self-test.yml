@@ -40,6 +40,27 @@ jobs:
           GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
           test -f "$workdir/README.md"
 
+      - name: Discover Oidefile under .github/
+        env:
+          SOURCE: iwamot/oide-fixture-public@main
+        run: |
+          workdir=$(mktemp -d)
+          mkdir -p "$workdir/.github"
+          echo "README.md" > "$workdir/.github/Oidefile"
+          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          test -f "$workdir/README.md"
+
+      - name: Root Oidefile takes precedence over .github/
+        env:
+          SOURCE: iwamot/oide-fixture-public@main
+        run: |
+          workdir=$(mktemp -d)
+          mkdir -p "$workdir/.github"
+          echo "README.md" > "$workdir/Oidefile"
+          echo "__nonexistent__" > "$workdir/.github/Oidefile"
+          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          test -f "$workdir/README.md"
+
       - name: Pull from private fixture (with token)
         if: github.event.pull_request.head.repo.fork != true
         env:
