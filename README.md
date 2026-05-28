@@ -10,7 +10,7 @@ Common use case: a template repository owns shared files (license, security poli
 
 ## Usage
 
-Add an `Oidefile` at your repo root listing the files to pull:
+Add an `Oidefile` listing the files to pull:
 
 ```
 LICENSE
@@ -52,12 +52,17 @@ Oide writes pulled files into the workspace; pushing them and opening a PR are s
 
 ## Oidefile
 
-A plain-text manifest at your repo root. One file path per line, relative to the repo root:
+A plain-text manifest listing one file path per line, relative to the repo root:
 
 ```
 LICENSE
 SECURITY.md
 ```
+
+Oide looks for it in these locations and uses the first match:
+
+1. `Oidefile`
+2. `.github/Oidefile`
 
 ## How it works
 
@@ -81,7 +86,7 @@ For cross-repository access, `secrets.GITHUB_TOKEN` is not sufficient (it only g
 
 ## Tip: source-managed manifest
 
-Listing `Oidefile` itself in your `Oidefile` lets the source own the manifest going forward:
+Listing your Oidefile's own path in it lets the source own the manifest going forward:
 
 ```
 LICENSE
@@ -89,7 +94,7 @@ Oidefile
 SECURITY.md
 ```
 
-When `Oidefile` is self-listed, Oide fetches the source's `Oidefile` first and re-reads it before pulling the other files. Adding a line in source's `Oidefile` then propagates to every consumer in a single run. Omit `Oidefile` from the manifest to let each consumer pin its own subset.
+When the Oidefile is self-listed, Oide fetches the source's copy first and re-reads it before pulling the other files, so additions on the source side propagate to every consumer in a single run. Omit it to let each consumer pin its own subset.
 
 ## Tip: Renovate integration
 
