@@ -15,12 +15,5 @@ inputs:
     default: ''
 
 runs:
-  using: composite
-  steps:
-    - name: Run oide
-      shell: bash
-      env:
-        SOURCE: ${{ inputs.source }}
-        TOKEN: ${{ inputs.token }}
-        ACTION_PATH: ${{ github.action_path }}
-      run: bash "$ACTION_PATH/scripts/oide.sh"
+  using: node24
+  main: dist/index.js

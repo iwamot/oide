@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Coverage
+coverage/
+
+# Claude Code
+.claude/
+
+# Temporary files
+*.tmp
