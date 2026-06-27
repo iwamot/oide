@@ -69,7 +69,7 @@ Oide looks for it in these locations and uses the first match:
 1. Parse `source` into `repo` and `ref`.
 2. **Self-skip**: if `github.repository == repo`, exit no-op. Keeps the action from acting on the source repo itself when the workflow file happens to live there too.
 3. Read the caller's `Oidefile`.
-4. For each listed file present in source's git tree, copy it into the workspace. Files absent from source are skipped.
+4. For each listed file, read it from source at `ref` via the GitHub Contents API and write it into the workspace. Files absent from source are skipped, as are files over the API's 1 MB inline limit.
 
 ## Private source repositories
 
