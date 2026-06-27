@@ -33,50 +33,50 @@ jobs:
 
       - name: Pull from public fixture (no token)
         env:
-          SOURCE: iwamot/oide-fixture-public@main
+          INPUT_SOURCE: iwamot/oide-fixture-public@main
         run: |
           workdir=$(mktemp -d)
           echo "README.md" > "$workdir/Oidefile"
-          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          GITHUB_WORKSPACE="$workdir" node dist/index.js
           test -f "$workdir/README.md"
 
       - name: Discover Oidefile under .github/
         env:
-          SOURCE: iwamot/oide-fixture-public@main
+          INPUT_SOURCE: iwamot/oide-fixture-public@main
         run: |
           workdir=$(mktemp -d)
           mkdir -p "$workdir/.github"
           echo "README.md" > "$workdir/.github/Oidefile"
-          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          GITHUB_WORKSPACE="$workdir" node dist/index.js
           test -f "$workdir/README.md"
 
       - name: Root Oidefile takes precedence over .github/
         env:
-          SOURCE: iwamot/oide-fixture-public@main
+          INPUT_SOURCE: iwamot/oide-fixture-public@main
         run: |
           workdir=$(mktemp -d)
           mkdir -p "$workdir/.github"
           echo "README.md" > "$workdir/Oidefile"
           echo "__nonexistent__" > "$workdir/.github/Oidefile"
-          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          GITHUB_WORKSPACE="$workdir" node dist/index.js
           test -f "$workdir/README.md"
 
       - name: Pull from private fixture (with token)
         if: github.event.pull_request.head.repo.fork != true
         env:
-          SOURCE: iwamot/oide-fixture-private@main
-          TOKEN: ${{ secrets.OIDE_FIXTURE_TOKEN }}
+          INPUT_SOURCE: iwamot/oide-fixture-private@main
+          INPUT_TOKEN: ${{ secrets.OIDE_FIXTURE_TOKEN }}
         run: |
           workdir=$(mktemp -d)
           echo "README.md" > "$workdir/Oidefile"
-          GITHUB_WORKSPACE="$workdir" bash scripts/oide.sh
+          GITHUB_WORKSPACE="$workdir" node dist/index.js
           test -f "$workdir/README.md"
 
       - name: Self-skip exits no-op when source equals github.repository
         env:
-          SOURCE: ${{ github.repository }}@main
+          INPUT_SOURCE: ${{ github.repository }}@main
         run: |
-          output=$(bash scripts/oide.sh)
+          output=$(node dist/index.js)
           echo "$output"
           if ! echo "$output" | grep -q "self-skip"; then
             echo "::error::self-skip notice not emitted"
