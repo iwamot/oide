@@ -16,12 +16,17 @@ export type ParsedSources =
  * for it. Pairing the two is what lets a repo pull from several sources:
  * a list per source keeps them from claiming the same paths, so no
  * precedence between sources has to be defined.
+ *
+ * A line starting with `#` is ignored. Callers write this input as a YAML
+ * block scalar, where a `#` line is content rather than a comment, so it
+ * is the only place a per-source note — a Renovate annotation, say — can
+ * sit next to the pin it belongs to.
  */
 export function parseSources(input: string): ParsedSources {
   const lines = input
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .filter((line) => line.length > 0 && !line.startsWith("#"));
   if (lines.length === 0) {
     return { ok: false, error: "sources input is required" };
   }

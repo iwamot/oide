@@ -111,8 +111,35 @@ describe("parseSources", () => {
     });
   });
 
+  test("ignores comment lines", () => {
+    expect(
+      parseSources(
+        "# renovate: datasource=github-tags depName=org/repo\norg/repo@v1.0.0",
+      ),
+    ).toEqual({
+      ok: true,
+      sources: [{ repo: "org/repo", ref: "v1.0.0", oidefile: null }],
+    });
+  });
+
+  test("takes a # only at the start of a line as a comment", () => {
+    expect(parseSources("org/repo@v1.0.0 .github/Oidefile#1")).toEqual({
+      ok: true,
+      sources: [
+        { repo: "org/repo", ref: "v1.0.0", oidefile: ".github/Oidefile#1" },
+      ],
+    });
+  });
+
   test("rejects empty input", () => {
     expect(parseSources("   \n\n")).toEqual({
+      ok: false,
+      error: "sources input is required",
+    });
+  });
+
+  test("rejects input that is only comments", () => {
+    expect(parseSources("# nothing here\n")).toEqual({
       ok: false,
       error: "sources input is required",
     });

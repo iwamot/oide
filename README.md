@@ -111,6 +111,14 @@ A source may name the Oidefile to read for it, which is what lets one repo pull 
 
 Give each source its own manifest rather than sharing one. Two sources that both hold a listed path would otherwise both write it, and which one wins would come down to their order.
 
+A line starting with `#` is ignored, so a note can sit next to the pin it belongs to — a block scalar takes `#` as content rather than as a YAML comment:
+
+```yaml
+    sources: |
+      # renovate: datasource=github-tags depName=org/template-repo
+      org/template-repo@v1.0.0
+```
+
 ## Tip: Renovate integration
 
 Declare the source ref as an env var with a Renovate annotation, then reference it from the action input:
