@@ -33,7 +33,7 @@ jobs:
 
       - name: Pull from public fixture (no token)
         env:
-          INPUT_SOURCE: iwamot/oide-fixture-public@main
+          INPUT_SOURCES: iwamot/oide-fixture-public@main
         run: |
           workdir=$(mktemp -d)
           echo "README.md" > "$workdir/Oidefile"
@@ -42,7 +42,7 @@ jobs:
 
       - name: Discover Oidefile under .github/
         env:
-          INPUT_SOURCE: iwamot/oide-fixture-public@main
+          INPUT_SOURCES: iwamot/oide-fixture-public@main
         run: |
           workdir=$(mktemp -d)
           mkdir -p "$workdir/.github"
@@ -52,7 +52,7 @@ jobs:
 
       - name: Root Oidefile takes precedence over .github/
         env:
-          INPUT_SOURCE: iwamot/oide-fixture-public@main
+          INPUT_SOURCES: iwamot/oide-fixture-public@main
         run: |
           workdir=$(mktemp -d)
           mkdir -p "$workdir/.github"
@@ -61,10 +61,37 @@ jobs:
           GITHUB_WORKSPACE="$workdir" node dist/index.js
           test -f "$workdir/README.md"
 
+      - name: Read the Oidefile a source names
+        env:
+          INPUT_SOURCES: iwamot/oide-fixture-public@main .github/Oidefile.named
+        run: |
+          workdir=$(mktemp -d)
+          mkdir -p "$workdir/.github"
+          echo "__nonexistent__" > "$workdir/Oidefile"
+          echo "README.md" > "$workdir/.github/Oidefile.named"
+          GITHUB_WORKSPACE="$workdir" node dist/index.js
+          test -f "$workdir/README.md"
+
+      - name: Self-skip one source and carry on with the next
+        env:
+          INPUT_SOURCES: |
+            ${{ github.repository }}@main
+            iwamot/oide-fixture-public@main
+        run: |
+          workdir=$(mktemp -d)
+          echo "README.md" > "$workdir/Oidefile"
+          output=$(GITHUB_WORKSPACE="$workdir" node dist/index.js)
+          echo "$output"
+          if ! echo "$output" | grep -q "self-skip"; then
+            echo "::error::self-skip notice not emitted"
+            exit 1
+          fi
+          test -f "$workdir/README.md"
+
       - name: Pull from private fixture (with token)
         if: github.event.pull_request.head.repo.fork != true
         env:
-          INPUT_SOURCE: iwamot/oide-fixture-private@main
+          INPUT_SOURCES: iwamot/oide-fixture-private@main
           INPUT_TOKEN: ${{ secrets.OIDE_FIXTURE_TOKEN }}
         run: |
           workdir=$(mktemp -d)
@@ -74,7 +101,7 @@ jobs:
 
       - name: Self-skip exits no-op when source equals github.repository
         env:
-          INPUT_SOURCE: ${{ github.repository }}@main
+          INPUT_SOURCES: ${{ github.repository }}@main
         run: |
           output=$(node dist/index.js)
           echo "$output"

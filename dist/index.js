@@ -56,29 +56,49 @@ function asFileContent(data) {
 }
 
 // src/source.ts
-function parseSource(input) {
-  if (!input) {
-    return { ok: false, error: "source input is required" };
+function parseSources(input) {
+  const lines = input.split(`
+`).map((line) => line.trim()).filter((line) => line.length > 0);
+  if (lines.length === 0) {
+    return { ok: false, error: "sources input is required" };
   }
-  const at = input.lastIndexOf("@");
+  const sources = [];
+  for (const line of lines) {
+    const parsed = parseSource(line);
+    if (!parsed.ok) {
+      return parsed;
+    }
+    const { repo, ref, oidefile } = parsed;
+    sources.push({ repo, ref, oidefile });
+  }
+  return { ok: true, sources };
+}
+function parseSource(line) {
+  const fields = line.split(/\s+/).filter((field) => field.length > 0);
+  const target = fields[0];
+  if (target === undefined || fields.length > 2) {
+    return formatError(line);
+  }
+  const oidefile = fields[1] ?? null;
+  const at = target.lastIndexOf("@");
   if (at === -1) {
-    return formatError(input);
+    return formatError(line);
   }
-  const repo = input.slice(0, at);
-  const ref = input.slice(at + 1);
+  const repo = target.slice(0, at);
+  const ref = target.slice(at + 1);
   if (!repo || !ref) {
-    return formatError(input);
+    return formatError(line);
   }
   const slash = repo.indexOf("/");
   if (slash <= 0 || slash === repo.length - 1) {
-    return formatError(input);
+    return formatError(line);
   }
-  return { ok: true, repo, ref };
+  return { ok: true, repo, ref, oidefile };
 }
-function formatError(input) {
+function formatError(line) {
   return {
     ok: false,
-    error: `source must be in 'org/repo@ref' format, got: ${input}`
+    error: "each source must be in 'org/repo@ref' or 'org/repo@ref Oidefile'" + ` format, got: ${line}`
   };
 }
 function splitRepo(repo) {
@@ -132,48 +152,54 @@ function isSelfListed(entries, oidefilePath) {
 
 // src/main.ts
 async function main() {
-  const parsed = parseSource(getInput("source"));
+  const parsed = parseSources(getInput("sources"));
   if (!parsed.ok) {
     setFailed(parsed.error);
     return;
   }
-  const { repo: sourceRepo, ref: sourceRef } = parsed;
+  const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
+  const token = getInput("token");
+  let pulled = 0;
+  let skipped = 0;
+  for (const source of parsed.sources) {
+    const result = await pullSource(source, workspace, token);
+    if (!result.ok) {
+      setFailed(result.error);
+      return;
+    }
+    pulled += result.pulled;
+    skipped += result.skipped;
+  }
+  info(`Done. pulled=${pulled}, skipped=${skipped}`);
+}
+async function pullSource(source, workspace, token) {
+  const { repo: sourceRepo, ref: sourceRef } = source;
   if (shouldSelfSkip(process.env.GITHUB_REPOSITORY, sourceRepo)) {
     notice(`source equals github.repository (${sourceRepo}); self-skip`);
-    return;
+    return { ok: true, pulled: 0, skipped: 0 };
   }
-  const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
-  let oidefileRel = "";
-  for (const candidate of OIDEFILE_CANDIDATES) {
-    if (existsSync(join(workspace, candidate))) {
-      oidefileRel = candidate;
-      break;
-    }
+  const oidefileRel = resolveOidefile(workspace, source.oidefile);
+  if (!oidefileRel.ok) {
+    return oidefileRel;
   }
-  if (!oidefileRel) {
-    const [root, nested] = OIDEFILE_CANDIDATES;
-    setFailed(`Oidefile not found at ${join(workspace, root)} or ${join(workspace, nested)}`);
-    return;
-  }
-  const token = getInput("token");
-  const initial = parseOidefile(readFileSync(join(workspace, oidefileRel), "utf8"));
-  info(`Fetching ${sourceRepo} @ ${sourceRef} ...`);
+  const initial = parseOidefile(readFileSync(join(workspace, oidefileRel.path), "utf8"));
+  info(`Fetching ${sourceRepo} @ ${sourceRef} (${oidefileRel.path}) ...`);
   let pulled = 0;
   let skipped = 0;
   let oidefilePulled = false;
   let authoritative = initial;
-  if (isSelfListed(initial, oidefileRel)) {
-    const result = await readSourceFile(sourceRepo, sourceRef, oidefileRel, token);
+  if (isSelfListed(initial, oidefileRel.path)) {
+    const result = await readSourceFile(sourceRepo, sourceRef, oidefileRel.path, token);
     if (result.kind === "file") {
-      writeWorkspaceFile(workspace, oidefileRel, result.content);
-      info(`  pulled: ${oidefileRel}`);
+      writeWorkspaceFile(workspace, oidefileRel.path, result.content);
+      info(`  pulled: ${oidefileRel.path}`);
       pulled++;
       oidefilePulled = true;
       authoritative = parseOidefile(result.content.toString("utf8"));
     }
   }
   for (const entry of authoritative) {
-    if (entry === oidefileRel && oidefilePulled) {
+    if (entry === oidefileRel.path && oidefilePulled) {
       continue;
     }
     if (isUnsafePath(entry)) {
@@ -196,7 +222,31 @@ async function main() {
     info(`  pulled: ${entry}`);
     pulled++;
   }
-  info(`Done. pulled=${pulled}, skipped=${skipped}`);
+  return { ok: true, pulled, skipped };
+}
+function resolveOidefile(workspace, named) {
+  if (named !== null) {
+    if (isUnsafePath(named)) {
+      return { ok: false, error: `invalid Oidefile path: ${named}` };
+    }
+    if (!existsSync(join(workspace, named))) {
+      return {
+        ok: false,
+        error: `Oidefile not found at ${join(workspace, named)}`
+      };
+    }
+    return { ok: true, path: named };
+  }
+  for (const candidate of OIDEFILE_CANDIDATES) {
+    if (existsSync(join(workspace, candidate))) {
+      return { ok: true, path: candidate };
+    }
+  }
+  const [root, nested] = OIDEFILE_CANDIDATES;
+  return {
+    ok: false,
+    error: `Oidefile not found at ${join(workspace, root)} or ${join(workspace, nested)}`
+  };
 }
 function writeWorkspaceFile(workspace, rel, content) {
   const dest = join(workspace, rel);
