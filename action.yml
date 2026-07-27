@@ -1,13 +1,13 @@
 name: 'Oide by iwamot'
-description: 'Pulls files listed in your Oidefile from a source repository.'
+description: 'Pulls files listed in your Oidefile from source repositories.'
 
 branding:
   icon: corner-left-down
   color: orange
 
 inputs:
-  source:
-    description: 'Source repo in org/repo@ref format (ref can be tag, branch, or SHA)'
+  sources:
+    description: 'One source per line, as org/repo@ref (ref can be tag, branch, or SHA), optionally followed by the Oidefile to read for it'
     required: true
   token:
     description: 'Token with contents:read access to source repo. Required only for private source repositories.'

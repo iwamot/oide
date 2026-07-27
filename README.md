@@ -4,7 +4,7 @@
 
 > Oide (/oh-ee-day/) — Japanese for "come over"
 
-GitHub Action that pulls files listed in your `Oidefile` from a source repository.
+GitHub Action that pulls files listed in your `Oidefile` from source repositories.
 
 Common use case: a template repository owns shared files (license, security policy, CI configs, ...), and consumer repositories pull updates from it on a schedule.
 
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@...
       - uses: iwamot/oide@...
         with:
-          source: org/template-repo@v1.0.0
+          sources: org/template-repo@v1.0.0
       - name: Open or update PR
 ```
 
@@ -47,7 +47,7 @@ Oide writes pulled files into the workspace; pushing them and opening a PR are s
 
 | Input | Required | Description |
 |---|---|---|
-| `source` | yes | Source repo as `org/repo@ref`. `ref` can be a tag, branch, or commit SHA. |
+| `sources` | yes | One source per line, as `org/repo@ref` — `ref` can be a tag, branch, or commit SHA — optionally followed by the Oidefile to read for it. |
 | `token`  | no  | Token with `contents:read` access to the source repo. Required only for private source repositories. |
 
 ## Oidefile
@@ -59,17 +59,18 @@ LICENSE
 SECURITY.md
 ```
 
-Oide looks for it in these locations and uses the first match:
+Unless a source names one, Oide looks for it in these locations and uses the first match:
 
 1. `Oidefile`
 2. `.github/Oidefile`
 
 ## How it works
 
-1. Parse `source` into `repo` and `ref`.
-2. **Self-skip**: if `github.repository == repo`, exit no-op. Keeps the action from acting on the source repo itself when the workflow file happens to live there too.
-3. Read the caller's `Oidefile`.
-4. For each listed file, read it from source at `ref` via the GitHub Contents API and write it into the workspace. Files absent from source are skipped, as are files over the API's 1 MB inline limit.
+For each source, in the order listed:
+
+1. **Self-skip**: if `github.repository == repo`, skip that source. Keeps the action from acting on the source repo itself when the workflow file happens to live there too.
+2. Read the source's Oidefile — the one it named, or the first candidate present.
+3. For each listed file, read it from source at `ref` via the GitHub Contents API and write it into the workspace. Files absent from source are skipped, as are files over the API's 1 MB inline limit.
 
 ## Private source repositories
 
@@ -78,7 +79,7 @@ To pull from a private source, pass a token with `contents:read` access on the s
 ```yaml
 - uses: iwamot/oide@...
   with:
-    source: org/private-template@v1.0.0
+    sources: org/private-template@v1.0.0
     token: ${{ secrets.OIDE_TOKEN }}
 ```
 
@@ -95,6 +96,20 @@ SECURITY.md
 ```
 
 When the Oidefile is self-listed, Oide fetches the source's copy first and re-reads it before pulling the other files, so additions on the source side propagate to every consumer in a single run. Omit it to let each consumer pin its own subset.
+
+## Tip: several sources
+
+A source may name the Oidefile to read for it, which is what lets one repo pull from more than one:
+
+```yaml
+- uses: iwamot/oide@...
+  with:
+    sources: |
+      org/template-repo@v1.0.0
+      org/other-repo@v2.0.0 .github/Oidefile.other
+```
+
+Give each source its own manifest rather than sharing one. Two sources that both hold a listed path would otherwise both write it, and which one wins would come down to their order.
 
 ## Tip: Renovate integration
 
