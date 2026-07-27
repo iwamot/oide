@@ -58,7 +58,7 @@ function asFileContent(data) {
 // src/source.ts
 function parseSources(input) {
   const lines = input.split(`
-`).map((line) => line.trim()).filter((line) => line.length > 0);
+`).map((line) => line.trim()).filter((line) => line.length > 0 && !line.startsWith("#"));
   if (lines.length === 0) {
     return { ok: false, error: "sources input is required" };
   }

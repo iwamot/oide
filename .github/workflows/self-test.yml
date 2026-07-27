@@ -72,6 +72,17 @@ jobs:
           GITHUB_WORKSPACE="$workdir" node dist/index.js
           test -f "$workdir/README.md"
 
+      - name: Ignore a comment line among the sources
+        env:
+          INPUT_SOURCES: |
+            # renovate: datasource=github-tags depName=iwamot/oide-fixture-public
+            iwamot/oide-fixture-public@main
+        run: |
+          workdir=$(mktemp -d)
+          echo "README.md" > "$workdir/Oidefile"
+          GITHUB_WORKSPACE="$workdir" node dist/index.js
+          test -f "$workdir/README.md"
+
       - name: Self-skip one source and carry on with the next
         env:
           INPUT_SOURCES: |
