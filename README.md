@@ -134,7 +134,7 @@ jobs:
     steps:
       - uses: iwamot/oide@...
         with:
-          source: org/template-repo@${{ env.TEMPLATE_VERSION }}
+          sources: org/template-repo@${{ env.TEMPLATE_VERSION }}
 ```
 
 Renovate's [`customManagers:githubActionsVersions`](https://docs.renovatebot.com/presets-customManagers/#custommanagersgithubactionsversions) preset (included in `config:best-practices`) picks this up and opens PRs when new tags are published.
