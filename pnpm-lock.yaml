@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@types/bun':
-        specifier: 1.4.1
-        version: 1.4.1
+        specifier: 1.4.2
+        version: 1.4.2
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -20,8 +20,8 @@ importers:
 
 packages:
 
-  '@types/bun@1.4.1':
-    resolution: {integrity: sha512-0AVGiTXGajf1rgKom3N+c5L7CBxuoyyv1i44M0nX4UDK0G/fnRAMiri93nHuVPIb429KKtAgj7HatVmmOjeQLA==}
+  '@types/bun@1.4.2':
+    resolution: {integrity: sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ==}
 
   '@types/node@24.13.3':
     resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
@@ -146,8 +146,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  bun-types@1.4.1:
-    resolution: {integrity: sha512-loKuVrAFZKfEv+JvWkHRS9GW5IqLuLRjVXN9p+vZvBN86O5hf/pBZQ5hSoyipsrMmWObZBDvWnlmKvjKTM0PdA==}
+  bun-types@1.4.2:
+    resolution: {integrity: sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w==}
 
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
@@ -159,9 +159,9 @@ packages:
 
 snapshots:
 
-  '@types/bun@1.4.1':
+  '@types/bun@1.4.2':
     dependencies:
-      bun-types: 1.4.1
+      bun-types: 1.4.2
 
   '@types/node@24.13.3':
     dependencies:
@@ -227,7 +227,7 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
-  bun-types@1.4.1:
+  bun-types@1.4.2:
     dependencies:
       '@types/node': 24.13.3
 
