@@ -43,6 +43,7 @@ jobs:
       - name: Discover Oidefile under .github/
         env:
           INPUT_SOURCES: iwamot/oide-fixture-public@main
+          INPUT_TOKEN: ${{ github.token }}
         run: |
           workdir=$(mktemp -d)
           mkdir -p "$workdir/.github"
@@ -53,6 +54,7 @@ jobs:
       - name: Root Oidefile takes precedence over .github/
         env:
           INPUT_SOURCES: iwamot/oide-fixture-public@main
+          INPUT_TOKEN: ${{ github.token }}
         run: |
           workdir=$(mktemp -d)
           mkdir -p "$workdir/.github"
@@ -64,6 +66,7 @@ jobs:
       - name: Read the Oidefile a source names
         env:
           INPUT_SOURCES: iwamot/oide-fixture-public@main .github/Oidefile.named
+          INPUT_TOKEN: ${{ github.token }}
         run: |
           workdir=$(mktemp -d)
           mkdir -p "$workdir/.github"
@@ -77,6 +80,7 @@ jobs:
           INPUT_SOURCES: |
             # renovate: datasource=github-tags depName=iwamot/oide-fixture-public
             iwamot/oide-fixture-public@main
+          INPUT_TOKEN: ${{ github.token }}
         run: |
           workdir=$(mktemp -d)
           echo "README.md" > "$workdir/Oidefile"
@@ -88,6 +92,7 @@ jobs:
           INPUT_SOURCES: |
             ${{ github.repository }}@main
             iwamot/oide-fixture-public@main
+          INPUT_TOKEN: ${{ github.token }}
         run: |
           workdir=$(mktemp -d)
           echo "README.md" > "$workdir/Oidefile"
