@@ -55,6 +55,40 @@ function asFileContent(data) {
   return { type, encoding, content };
 }
 
+// src/rate-limit.ts
+function rateLimitDecision(response, now, attempt, waited) {
+  const delay = rateLimitDelay(response, now);
+  if (delay === null)
+    return { kind: "proceed" };
+  return {
+    kind: attempt >= 2 || waited + delay > 60000 ? "stop" : "retry",
+    delay
+  };
+}
+function rateLimitDelay({ status, retryAfter, remaining, reset, body }, now) {
+  if (status !== 403 && status !== 429)
+    return null;
+  const limited = status === 429 || remaining === "0" || retryAfter !== null || /rate limit/i.test(body);
+  if (!limited)
+    return null;
+  if (retryAfter !== null) {
+    const seconds = Number(retryAfter);
+    if (retryAfter.trim() && Number.isFinite(seconds) && seconds >= 0) {
+      return Math.max(1000, Math.ceil(seconds * 1000));
+    }
+    const date = Date.parse(retryAfter);
+    if (Number.isFinite(date))
+      return Math.max(1000, date - now);
+  }
+  if (remaining === "0") {
+    const resetTime = Number(reset);
+    if (Number.isFinite(resetTime) && resetTime * 1000 > now) {
+      return resetTime * 1000 - now;
+    }
+  }
+  return 60000;
+}
+
 // src/source.ts
 function parseSources(input) {
   const lines = input.split(`
@@ -108,7 +142,7 @@ function splitRepo(repo) {
 
 // src/github.ts
 var API_BASE = "https://api.github.com";
-async function readSourceFile(repo, ref, path, token) {
+function sourceRequest(repo, ref, path, token) {
   const { owner, name } = splitRepo(repo);
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
   const url = `${API_BASE}/repos/${owner}/${name}/contents/${encodedPath}?ref=${encodeURIComponent(ref)}`;
@@ -117,17 +151,27 @@ async function readSourceFile(repo, ref, path, token) {
     "X-GitHub-Api-Version": "2022-11-28",
     "User-Agent": "iwamot/oide"
   };
-  if (token) {
+  if (token)
     headers.Authorization = `Bearer ${token}`;
-  }
+  return { url, headers };
+}
+async function readSourceFile(repo, ref, path, token) {
+  const { url, headers } = sourceRequest(repo, ref, path, token);
   let waited = 0;
   let res;
   for (let attempt = 0;; attempt++) {
     res = await fetch(url, { headers });
-    const delay = await rateLimitDelay(res);
-    if (delay === null)
+    const decision = rateLimitDecision({
+      status: res.status,
+      retryAfter: res.headers.get("retry-after"),
+      remaining: res.headers.get("x-ratelimit-remaining"),
+      reset: res.headers.get("x-ratelimit-reset"),
+      body: res.status === 403 ? await res.clone().text() : ""
+    }, Date.now(), attempt, waited);
+    if (decision.kind === "proceed")
       break;
-    if (attempt === 2 || waited + delay > 60000) {
+    const { delay } = decision;
+    if (decision.kind === "stop") {
       const authHint = token ? "" : "; pass the token input to use the authenticated quota";
       throw new Error(`GitHub API rate limited for ${repo}@${ref}:${path}; retry after ${Math.ceil(delay / 1000)}s${authHint}`);
     }
@@ -135,38 +179,12 @@ async function readSourceFile(repo, ref, path, token) {
     await new Promise((resolve) => setTimeout(resolve, delay));
     waited += delay;
   }
-  if (res.status === 404) {
+  if (res.status === 404)
     return { kind: "absent" };
-  }
   if (!res.ok) {
     throw new Error(`GitHub API ${res.status} ${res.statusText} for ${repo}@${ref}:${path}`);
   }
   return interpretContents(await res.json());
-}
-async function rateLimitDelay(res) {
-  if (res.status !== 403 && res.status !== 429)
-    return null;
-  const retryAfter = res.headers.get("retry-after");
-  const remaining = res.headers.get("x-ratelimit-remaining");
-  const limited = res.status === 429 || remaining === "0" || retryAfter !== null || /rate limit/i.test(await res.clone().text());
-  if (!limited)
-    return null;
-  if (retryAfter !== null) {
-    const seconds = Number(retryAfter);
-    if (retryAfter.trim() && Number.isFinite(seconds) && seconds >= 0) {
-      return Math.max(1000, Math.ceil(seconds * 1000));
-    }
-    const date = Date.parse(retryAfter);
-    if (Number.isFinite(date))
-      return Math.max(1000, date - Date.now());
-  }
-  if (remaining === "0") {
-    const reset = Number(res.headers.get("x-ratelimit-reset"));
-    if (Number.isFinite(reset) && reset * 1000 > Date.now()) {
-      return reset * 1000 - Date.now();
-    }
-  }
-  return 60000;
 }
 
 // src/oidefile.ts
