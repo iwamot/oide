@@ -1,3 +1,4 @@
+import { warning } from "./actions.ts";
 import { interpretContents, type ReadResult } from "./contents.ts";
 import { splitRepo } from "./source.ts";
 
@@ -27,7 +28,24 @@ export async function readSourceFile(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, { headers });
+  let waited = 0;
+  let res: Response;
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(url, { headers });
+    const delay = await rateLimitDelay(res);
+    if (delay === null) break;
+    if (attempt === 2 || waited + delay > 60_000) {
+      const authHint = token
+        ? ""
+        : "; pass the token input to use the authenticated quota";
+      throw new Error(
+        `GitHub API rate limited for ${repo}@${ref}:${path}; retry after ${Math.ceil(delay / 1000)}s${authHint}`,
+      );
+    }
+    warning(`GitHub API rate limited; retrying in ${Math.ceil(delay / 1000)}s`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    waited += delay;
+  }
   if (res.status === 404) {
     return { kind: "absent" };
   }
@@ -38,4 +56,32 @@ export async function readSourceFile(
   }
 
   return interpretContents(await res.json());
+}
+
+/** Only rate-limit responses are retried; ordinary permission failures fail immediately. */
+async function rateLimitDelay(res: Response): Promise<number | null> {
+  if (res.status !== 403 && res.status !== 429) return null;
+  const retryAfter = res.headers.get("retry-after");
+  const remaining = res.headers.get("x-ratelimit-remaining");
+  const limited =
+    res.status === 429 ||
+    remaining === "0" ||
+    retryAfter !== null ||
+    /rate limit/i.test(await res.clone().text());
+  if (!limited) return null;
+  if (retryAfter !== null) {
+    const seconds = Number(retryAfter);
+    if (retryAfter.trim() && Number.isFinite(seconds) && seconds >= 0) {
+      return Math.max(1000, Math.ceil(seconds * 1000));
+    }
+    const date = Date.parse(retryAfter);
+    if (Number.isFinite(date)) return Math.max(1000, date - Date.now());
+  }
+  if (remaining === "0") {
+    const reset = Number(res.headers.get("x-ratelimit-reset"));
+    if (Number.isFinite(reset) && reset * 1000 > Date.now()) {
+      return reset * 1000 - Date.now();
+    }
+  }
+  return 60_000;
 }

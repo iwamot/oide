@@ -38,8 +38,11 @@ jobs:
       - uses: iwamot/oide@...
         with:
           sources: org/template-repo@v1.0.0
+          token: ${{ github.token }}
       - name: Open or update PR
 ```
+
+Pass `${{ github.token }}` for public sources too: anonymous API requests share a small IP-based quota. The job needs only `contents: read` for Oide itself. Private cross-repository sources require a token with access to those sources.
 
 Oide writes pulled files into the workspace; pushing them and opening a PR are separate steps (and the permissions above exist for those steps, not for Oide itself).
 
@@ -48,7 +51,7 @@ Oide writes pulled files into the workspace; pushing them and opening a PR are s
 | Input | Required | Description |
 |---|---|---|
 | `sources` | yes | One source per line, as `org/repo@ref` — `ref` can be a tag, branch, or commit SHA — optionally followed by the Oidefile to read for it. |
-| `token`  | no  | Token with `contents:read` access to the source repo. Required only for private source repositories. |
+| `token`  | no  | Token with `contents:read` access to the source repo. Recommended for public sources to avoid the anonymous rate limit; required for private source repositories. |
 
 ## Oidefile
 
@@ -135,9 +138,14 @@ jobs:
       - uses: iwamot/oide@...
         with:
           sources: org/template-repo@${{ env.TEMPLATE_VERSION }}
+          token: ${{ github.token }}
 ```
 
 Renovate's [`customManagers:githubActionsVersions`](https://docs.renovatebot.com/presets-customManagers/#custommanagersgithubactionsversions) preset (included in `config:best-practices`) picks this up and opens PRs when new tags are published.
+
+## Rate limits
+
+Rate-limited source reads respect `Retry-After` and `X-RateLimit-Reset`, with at most two retries and 60 seconds of total waiting per file. Longer limits fail immediately with a suggested wait; permission errors are not retried.
 
 ## Out of scope
 
