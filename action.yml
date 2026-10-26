@@ -10,7 +10,7 @@ inputs:
     description: 'One source per line, as org/repo@ref (ref can be tag, branch, or SHA), optionally followed by the Oidefile to read for it'
     required: true
   token:
-    description: 'Token with contents:read access to source repo. Required only for private source repositories.'
+    description: 'Token with contents:read access to source repo. Recommended for public sources to avoid anonymous rate limits; required for private sources.'
     required: false
     default: ''
 

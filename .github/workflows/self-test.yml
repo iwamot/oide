@@ -35,9 +35,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Pull from public fixture (no token)
+      - name: Pull from public fixture (with token)
         env:
           INPUT_SOURCES: iwamot/oide-fixture-public@main
+          INPUT_TOKEN: ${{ github.token }}
         run: |
           workdir=$(mktemp -d)
           echo "README.md" > "$workdir/Oidefile"
