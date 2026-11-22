@@ -16,10 +16,43 @@ describe("sourceRequest", () => {
     );
     expect(headers.Authorization).toBe("Bearer test-token");
   });
-  test("encodes path segments and ref separately", () => {
-    const { url } = sourceRequest("org/repo", "feature/a+b", "docs/a b.md", "");
-    expect(url).toBe(
-      "https://api.github.com/repos/org/repo/contents/docs/a%20b.md?ref=feature%2Fa%2Bb",
-    );
+  test("preserves path components and refs without creating extra URL parameters", () => {
+    const names = [
+      "README.md",
+      ".github",
+      "docs",
+      "a b.md",
+      "日本語",
+      "100%.txt",
+      "a+b",
+      "q?x=1&ref=other",
+      "hash#file",
+      "[draft]",
+    ];
+    for (const first of names)
+      for (const last of names)
+        for (const ref of [
+          "main",
+          "v1.0.0",
+          "feature/a+b",
+          "tag?x=1&ref=other",
+          "日本語#tag",
+          "100%",
+        ]) {
+          const parts = [first, last],
+            prefix = "/repos/org/repo/contents/";
+          const request = sourceRequest("org/repo", ref, parts.join("/"), "");
+          const url = new URL(request.url);
+          expect(url.origin).toBe("https://api.github.com");
+          expect(url.pathname.startsWith(prefix)).toBe(true);
+          expect(
+            url.pathname
+              .slice(prefix.length)
+              .split("/")
+              .map(decodeURIComponent),
+          ).toEqual(parts);
+          expect([...url.searchParams]).toEqual([["ref", ref]]);
+          expect(url.hash).toBe("");
+        }
   });
 });

@@ -2,36 +2,33 @@ import { describe, expect, test } from "bun:test";
 import { OIDEFILE_CANDIDATES, parseOidefile } from "../src/oidefile.ts";
 
 describe("parseOidefile", () => {
-  test("returns one entry per non-empty line", () => {
-    expect(parseOidefile("LICENSE\nSECURITY.md\n")).toEqual([
+  test("preserves entry spelling, order, and repetitions through whitespace and line-ending changes", () => {
+    const paths = [
       "LICENSE",
       "SECURITY.md",
-    ]);
-  });
-
-  test("trims surrounding whitespace", () => {
-    expect(parseOidefile("  LICENSE  \n\t.github/Oidefile\t")).toEqual([
-      "LICENSE",
       ".github/Oidefile",
-    ]);
-  });
-
-  test("drops blank and whitespace-only lines", () => {
-    expect(parseOidefile("LICENSE\n\n   \nSECURITY.md")).toEqual([
-      "LICENSE",
-      "SECURITY.md",
-    ]);
-  });
-
-  test("handles CRLF line endings (Oidefile authored on Windows)", () => {
-    expect(parseOidefile("LICENSE\r\nSECURITY.md\r\n")).toEqual([
-      "LICENSE",
-      "SECURITY.md",
-    ]);
-  });
-
-  test("returns empty for empty input", () => {
-    expect(parseOidefile("")).toEqual([]);
+      "dir/space name.txt",
+      "資料/設定.json",
+      "#filename",
+    ];
+    const lists = [
+      [],
+      ...paths.map((path) => [path]),
+      ...paths.flatMap((first) => paths.map((second) => [first, second])),
+    ];
+    for (const entries of lists)
+      for (const padding of ["", "  ", "\t", " \t"])
+        for (const ending of ["\n", "\r\n"])
+          for (const blanks of [[], [""], ["", " \t"]]) {
+            const lines = [
+              ...blanks,
+              ...entries.flatMap((entry) => [
+                padding + entry + padding,
+                ...blanks,
+              ]),
+            ];
+            expect(parseOidefile(lines.join(ending))).toEqual(entries);
+          }
   });
 });
 
