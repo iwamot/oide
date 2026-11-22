@@ -2,13 +2,38 @@ import { describe, expect, test } from "bun:test";
 import { interpretContents } from "../src/contents.ts";
 
 describe("interpretContents", () => {
-  test("decodes a base64 file", () => {
-    const result = interpretContents({
-      type: "file",
-      encoding: "base64",
-      content: Buffer.from("hello\n").toString("base64"),
-    });
-    expect(result).toEqual({ kind: "file", content: Buffer.from("hello\n") });
+  test("restores every byte regardless of base64 line wrapping without changing the response", () => {
+    const payloads = [
+      Buffer.from("hello\n"),
+      ...[0, 1, 2, 3, 4, 7, 255, 256, 1024].map((length) =>
+        Buffer.from(
+          Uint8Array.from({ length }, (_, i) => (i * 73 + length) % 256),
+        ),
+      ),
+    ];
+    for (const bytes of payloads) {
+      const encoded = bytes.toString("base64");
+      for (const content of [
+        encoded,
+        encoded.replace(/.{4}/g, "$&\n"),
+        encoded.replace(/.{76}/g, "$&\n"),
+        encoded.replace(/.{76}/g, "$&\r\n"),
+      ]) {
+        const body = {
+          type: "file",
+          encoding: "base64",
+          content,
+          size: bytes.length,
+          sha: "0".repeat(40),
+        };
+        const before = structuredClone(body);
+        expect(interpretContents(body)).toEqual({
+          kind: "file",
+          content: bytes,
+        });
+        expect(body).toEqual(before);
+      }
+    }
   });
 
   test("treats a directory listing (array) as absent", () => {
